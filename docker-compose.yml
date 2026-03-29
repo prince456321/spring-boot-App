@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  mysql-db:
+    image: mysql:8
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: jojo
+      MYSQL_DATABASE: movie_app
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - music-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pjojo"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  music-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+      args:
+        SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3307/movie_app?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: jojo
+    image: music-app:latest
+    container_name: music-app-container
+    restart: unless-stopped
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/movie_app?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: jojo
+    ports:
+      - "8088:8088"
+    networks:
+      - music-net
+
+volumes:
+  mysql_data:
+
+networks:
+  music-net:
+    driver: bridge
