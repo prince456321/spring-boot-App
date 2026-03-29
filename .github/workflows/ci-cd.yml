@@ -39,6 +39,8 @@ jobs:
         run: mysqladmin ping -h 127.0.0.1 -P 3307 -uroot -pjojo
       - name: RUN integration test
         run: ./mvnw verify
+      - name: Build Docker image
+        run: docker build -t music-app:latest .
     
     
         
