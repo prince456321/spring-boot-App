@@ -41,6 +41,14 @@ jobs:
         run: ./mvnw verify
       - name: Build Docker image
         run: docker build -t music-app:latest .
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Tag Docker image
+        run: docker tag music-app:latest ghcr.io/${{ secrets.GHCR_USERNAME }}/music-app:latest
+      - name: Show tagged Docker images
+        run: docker images
+      - name: Push Docker image to GHCR
+        run: docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/music-app:latest
     
     
         
