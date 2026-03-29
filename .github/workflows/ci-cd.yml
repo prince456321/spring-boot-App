@@ -1,0 +1,10 @@
+name: music-web-app
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
