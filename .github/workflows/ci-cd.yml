@@ -11,4 +11,6 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4  # <-- Correction ici : "actions" avec un "s"
+      - name: Verifier la presence des fichiers
+        run: ls -R  # Cette commande affiche la liste de tous tes fichiers
 
