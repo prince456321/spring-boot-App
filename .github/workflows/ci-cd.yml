@@ -18,5 +18,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: make maven executable
+        run: chmod +x mvnw
+      - name: Run unit test
+        run: ./mvnw test
         
 
