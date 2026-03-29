@@ -1,13 +1,8 @@
 name: music-web-app
-
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
