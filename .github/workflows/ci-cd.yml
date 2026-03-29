@@ -37,6 +37,8 @@ jobs:
         run: ./mvnw test
       - name: check MySQL connection
         run: mysqladmin ping -h 127.0.0.1 -P 3307 -uroot -pjojo
+      - name: RUN integration test
+        run: ./mvnw verify
     
     
         
