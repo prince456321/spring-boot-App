@@ -8,6 +8,19 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: jojo
+          MYSQL_DATABASE: movie_app
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pjojo"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - name: checkout code
         uses: actions/checkout@v4  # <-- Correction ici : "actions" avec un "s"
@@ -22,18 +35,9 @@ jobs:
         run: chmod +x mvnw
       - name: Run unit test
         run: ./mvnw test
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: jojo
-          MYSQL_DATABASE: movie_app
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pjojo"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
+      - name: check MySQL connection
+        run: mysqladmin ping -h mysql -P 3306 -uroot -pjojo
+    
+    
         
 
