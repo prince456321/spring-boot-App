@@ -15,7 +15,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: jojo
           MYSQL_DATABASE: movie_app
         ports:
-          - 3306:3306
+          - 3307:3306
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -pjojo"
           --health-interval=10s
@@ -36,7 +36,7 @@ jobs:
       - name: Run unit test
         run: ./mvnw test
       - name: check MySQL connection
-        run: mysqladmin ping -h mysql -P 3306 -uroot -pjojo
+        run: mysqladmin ping -h 127.0.0.1 -P 3307 -uroot -pjojo
     
     
         
