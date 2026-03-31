@@ -96,6 +96,9 @@ jobs:
       - name: Terraform init
         working-directory: ./terraform-aws-music-app
         run: terraform init
+      - name: Terraform Apply
+        working-directory: ./terraform-aws-music-app
+        run: terraform apply -auto-approve
 
       - name: Get Terraform outputs
         working-directory: ./terraform-aws-music-app
