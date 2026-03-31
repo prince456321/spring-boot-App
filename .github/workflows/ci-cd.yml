@@ -68,7 +68,8 @@ jobs:
         run: aws sts get-caller-identity
       - name: Terraform init
         run: terraform init
-        
+      - name: Terraform apply
+        run: terraform apply -auto-approve
         
         
     
