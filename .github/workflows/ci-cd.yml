@@ -68,8 +68,10 @@ jobs:
         run: aws sts get-caller-identity
       - name: Terraform init
         run: terraform init
+        working-directory: ./terraform-aws-music-app
       - name: Terraform apply
         run: terraform apply -auto-approve -var="db_password=${{ secrets.TF_VAR_DB_PASSWORD }}"
+        working-directory: ./terraform-aws-music-app
         
         
         
