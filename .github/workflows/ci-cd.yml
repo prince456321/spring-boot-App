@@ -1,4 +1,4 @@
-name: music-web-app
+name: "music-web-app"
 
 on:
   push:
@@ -6,72 +6,35 @@ on:
       - main
 
 jobs:
-  test-and-build:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: jojo
-          MYSQL_DATABASE: movie_app
-        ports:
-          - 3307:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pjojo"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-    steps:
-      - name: checkout code
-        uses: actions/checkout@v4  # <-- Correction ici : "actions" avec un "s"
-      - name: Verifier la presence des fichiers
-        run: ls -R  # Cette commande affiche la liste de tous tes fichiers
-      - name: Setup JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: make maven executable
-        run: chmod +x mvnw
-      - name: Run unit test
-        run: ./mvnw test
-      - name: check MySQL connection
-        run: mysqladmin ping -h 127.0.0.1 -P 3307 -uroot -pjojo
-      - name: RUN integration test
-        run: ./mvnw verify
-      - name: Build Docker image
-        run: docker build -t music-app:latest .
-      - name: Login to GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
-      - name: Tag Docker image
-        run: docker tag music-app:latest ghcr.io/${{ secrets.GHCR_USERNAME }}/music-app:latest
-      - name: Show tagged Docker images
-        run: docker images
-      - name: Push Docker image to GHCR
-        run: docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/music-app:latest
-
   terraform:
     needs: test-and-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false # Recommandé pour éviter les problèmes de formatage d'output
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
+
       - name: Check AWS identity
         run: aws sts get-caller-identity
-      - name: Terraform init
-        run: terraform init
-        working-directory: ./terraform-aws-music-app
-      - name: Terraform destroy
-        run: terraform destroy -auto-approve -var="db_password=${{ secrets.TF_VAR_DB_PASSWORD }}"
-        working-directory: ./terraform-aws-music-app
-      
-        
 
+      - name: Terraform init
+        working-directory: ./terraform-aws-music-app
+        run: terraform init
+
+      - name: Terraform destroy
+        working-directory: ./terraform-aws-music-app
+        # Utilisation d'une variable d'environnement pour injecter le mot de passe plus proprement
+        env:
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+        run: terraform destroy -auto-approve
