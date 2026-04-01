@@ -6,9 +6,10 @@ on:
       - main
 
 jobs:
-  # JOB 1 : Tests unitaires et Build de l'application
+  # JOB 1 : Tests + Qualité + Coverage + Sécurité
   test-and-build:
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:8
@@ -22,6 +23,7 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,17 +37,54 @@ jobs:
       - name: Make maven executable
         run: chmod +x mvnw
 
-      - name: Run unit test
-        run: ./mvnw test
+      # ✅ LINTER
+      - name: Run Checkstyle
+        run: ./mvnw checkstyle:check
 
-  # JOB 2 : Provisioning de l'infrastructure (Terraform)
+      # ✅ TESTS + COVERAGE
+      - name: Run Tests + Coverage
+        run: ./mvnw clean verify
+
+      # ✅ UPLOAD COVERAGE
+      - name: Upload JaCoCo Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+
+      # ✅ BUILD IMAGE DOCKER
+      - name: Build Docker Image
+        run: docker build -t music-app:latest .
+
+      # ✅ TRIVY SCAN (sécurité)
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: 'music-app:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      # ✅ LOGIN GHCR
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+      # ✅ PUSH IMAGE
+      - name: Push Docker Image
+        run: |
+          docker tag music-app:latest ${{ vars.GHCR_IMAGE }}
+          docker push ${{ vars.GHCR_IMAGE }}
+
+  # JOB 2 : Terraform
   terraform:
     needs: test-and-build
     runs-on: ubuntu-latest
-    # On définit des outputs de job pour passer l'IP et l'Endpoint au job suivant
+
     outputs:
       ec2_public_ip: ${{ steps.set-outputs.outputs.EC2_PUBLIC_IP }}
       rds_endpoint: ${{ steps.set-outputs.outputs.RDS_ENDPOINT }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -79,10 +118,11 @@ jobs:
           echo "EC2_PUBLIC_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
           echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)" >> $GITHUB_OUTPUT
 
-  # JOB 3 : Déploiement sur l'instance EC2
+  # JOB 3 : Déploiement EC2
   deploy:
     needs: terraform
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
